@@ -1,0 +1,124 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "student.h"
+
+#define FILE_NAME "students.dat"
+
+void addStudent() {
+    FILE *fp = fopen(FILE_NAME, "ab");
+    if (!fp) {
+        perror("Error opening file");
+        return;
+    }
+    Student s;
+    printf("Enter Roll No: ");
+    scanf("%d", &s.roll);
+    getchar();
+    printf("Enter Name: ");
+    fgets(s.name, MAX_NAME, stdin);
+    s.name[strcspn(s.name, "\n")] = 0;
+    printf("Enter Marks: ");
+    scanf("%f", &s.marks);
+    fwrite(&s, sizeof(Student), 1, fp);
+    fclose(fp);
+    printf("Student added successfully.\n");
+}
+
+void displayStudents() {
+    FILE *fp = fopen(FILE_NAME, "rb");
+    if (!fp) {
+        printf("No records found.\n");
+        return;
+    }
+    Student s;
+    printf("\nRoll\tName\t\tMarks\n");
+    printf("-------------------------------\n");
+    while (fread(&s, sizeof(Student), 1, fp)) {
+        printf("%d\t%-15s%.2f\n", s.roll, s.name, s.marks);
+    }
+    fclose(fp);
+}
+
+void searchStudent() {
+    FILE *fp = fopen(FILE_NAME, "rb");
+    if (!fp) {
+        printf("No records found.\n");
+        return;
+    }
+    int roll;
+    printf("Enter roll number to search: ");
+    scanf("%d", &roll);
+    Student s;
+    int found = 0;
+    while (fread(&s, sizeof(Student), 1, fp)) {
+        if (s.roll == roll) {
+            printf("Found: Roll: %d, Name: %s, Marks: %.2f\n", s.roll, s.name, s.marks);
+            found = 1;
+            break;
+        }
+    }
+    if (!found)
+        printf("Student not found.\n");
+    fclose(fp);
+}
+
+void updateStudent() {
+    FILE *fp = fopen(FILE_NAME, "rb+");
+    if (!fp) {
+        printf("No records found.\n");
+        return;
+    }
+    int roll;
+    printf("Enter roll number to update: ");
+    scanf("%d", &roll);
+    Student s;
+    int found = 0;
+    while (fread(&s, sizeof(Student), 1, fp)) {
+        if (s.roll == roll) {
+            printf("Enter new name: ");
+            getchar();
+            fgets(s.name, MAX_NAME, stdin);
+            s.name[strcspn(s.name, "\n")] = 0;
+            printf("Enter new marks: ");
+            scanf("%f", &s.marks);
+            fseek(fp, -sizeof(Student), SEEK_CUR);
+            fwrite(&s, sizeof(Student), 1, fp);
+            printf("Student updated successfully.\n");
+            found = 1;
+            break;
+        }
+    }
+    if (!found)
+        printf("Student not found.\n");
+    fclose(fp);
+}
+
+void deleteStudent() {
+    FILE *fp = fopen(FILE_NAME, "rb");
+    if (!fp) {
+        printf("No records found.\n");
+        return;
+    }
+    FILE *temp = fopen("temp.dat", "wb");
+    int roll;
+    printf("Enter roll number to delete: ");
+    scanf("%d", &roll);
+    Student s;
+    int found = 0;
+    while (fread(&s, sizeof(Student), 1, fp)) {
+        if (s.roll == roll) {
+            found = 1;
+            continue;
+        }
+        fwrite(&s, sizeof(Student), 1, temp);
+    }
+    fclose(fp);
+    fclose(temp);
+    remove(FILE_NAME);
+    rename("temp.dat", FILE_NAME);
+    if (found)
+        printf("Student deleted successfully.\n");
+    else
+        printf("Student not found.\n");
+}
